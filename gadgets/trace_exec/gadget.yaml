@@ -24,7 +24,7 @@ datasources:
         annotations:
           description: The current working directory of the process (require --paths flag)
           columns.width: 64
-          columns.hidden: "true"
+          columns.hidden: "params:paths"
           columns.alignment: left
       pcomm:
         annotations:

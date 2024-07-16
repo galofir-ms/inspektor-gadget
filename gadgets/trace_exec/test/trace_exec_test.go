@@ -75,7 +75,7 @@ func TestTraceExec(t *testing.T) {
 	}
 
 	sleepArgs := []string{"/bin/sleep", "1"}
-	innerCmd := fmt.Sprintf("cd tmp ; while true ; do %s; done", strings.Join(sleepArgs, " "))
+	innerCmd := fmt.Sprintf("cd /tmp ; while true ; do %s; done", strings.Join(sleepArgs, " "))
 	// copies /bin/sh to /usr/bin/sh to check that the upper_layer is true when executing /usr/bin/sh
 	cmd := fmt.Sprintf("cp /bin/sh /usr/bin/sh ; setuidgid 1000:1111 /usr/bin/sh -c '%s'", innerCmd)
 	shArgs := []string{"/bin/sh", "-c", cmd}
