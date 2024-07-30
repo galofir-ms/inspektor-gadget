@@ -139,7 +139,7 @@ func (o *ebpfOperator) InstantiateImageOperator(
 	}
 	newInstance.config = v
 
-	err = newInstance.init(gadgetCtx)
+	err = newInstance.init(gadgetCtx, paramValues)
 	if err != nil {
 		return nil, fmt.Errorf("initializing ebpf gadget: %w", err)
 	}
@@ -305,7 +305,7 @@ func (i *ebpfInstance) analyze() error {
 	return nil
 }
 
-func (i *ebpfInstance) init(gadgetCtx operators.GadgetContext) error {
+func (i *ebpfInstance) init(gadgetCtx operators.GadgetContext, paramValues api.ParamValues) error {
 	// hack for backward-compability and until we have nicer interfaces available
 	gadgetCtx.SetVar("ebpfInstance", i)
 
@@ -319,7 +319,7 @@ func (i *ebpfInstance) init(gadgetCtx operators.GadgetContext) error {
 		return fmt.Errorf("analyzing: %w", err)
 	}
 
-	err = i.register(gadgetCtx)
+	err = i.register(gadgetCtx, paramValues)
 	if err != nil {
 		return fmt.Errorf("registering datasources: %w", err)
 	}
@@ -338,10 +338,11 @@ func (i *ebpfInstance) addDataSource(
 	name string,
 	size uint32,
 	fields []*Field,
+	paramValues api.ParamValues,
 ) (
 	datasource.DataSource, datasource.FieldAccessor, error,
 ) {
-	ds, err := gadgetCtx.RegisterDataSource(dsType, name)
+	ds, err := gadgetCtx.RegisterDataSourceWithParams(dsType, name, paramValues)
 	if err != nil {
 		return nil, nil, fmt.Errorf("adding tracer datasource: %w", err)
 	}
@@ -356,10 +357,10 @@ func (i *ebpfInstance) addDataSource(
 	return ds, accessor, nil
 }
 
-func (i *ebpfInstance) register(gadgetCtx operators.GadgetContext) error {
+func (i *ebpfInstance) register(gadgetCtx operators.GadgetContext, paramValues api.ParamValues) error {
 	// register datasources
 	for name, m := range i.tracers {
-		ds, accessor, err := i.addDataSource(gadgetCtx, datasource.TypeSingle, name, i.structs[m.structName].Size, i.structs[m.structName].Fields)
+		ds, accessor, err := i.addDataSource(gadgetCtx, datasource.TypeSingle, name, i.structs[m.structName].Size, i.structs[m.structName].Fields, paramValues)
 		if err != nil {
 			return fmt.Errorf("adding datasource: %w", err)
 		}
@@ -367,7 +368,7 @@ func (i *ebpfInstance) register(gadgetCtx operators.GadgetContext) error {
 		m.ds = ds
 	}
 	for name, m := range i.snapshotters {
-		ds, accessor, err := i.addDataSource(gadgetCtx, datasource.TypeArray, name, i.structs[m.structName].Size, i.structs[m.structName].Fields)
+		ds, accessor, err := i.addDataSource(gadgetCtx, datasource.TypeArray, name, i.structs[m.structName].Size, i.structs[m.structName].Fields, paramValues)
 		if err != nil {
 			return fmt.Errorf("adding datasource: %w", err)
 		}
@@ -377,7 +378,7 @@ func (i *ebpfInstance) register(gadgetCtx operators.GadgetContext) error {
 	}
 	for name, m := range i.mapIters {
 		fields := make([]*Field, 0)
-		ds, err := gadgetCtx.RegisterDataSource(datasource.TypeArray, name)
+		ds, err := gadgetCtx.RegisterDataSourceWithParams(datasource.TypeArray, name, paramValues)
 		if err != nil {
 			return fmt.Errorf("adding mapiter datasource: %w", err)
 		}

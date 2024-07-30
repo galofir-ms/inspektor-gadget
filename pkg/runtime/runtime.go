@@ -45,6 +45,7 @@ type GadgetContext interface {
 	Cancel()
 	ImageName() string
 	RegisterDataSource(datasource.Type, string) (datasource.DataSource, error)
+	RegisterDataSourceWithParams(datasource.Type, string, api.ParamValues) (datasource.DataSource, error)
 	GetDataSources() map[string]datasource.DataSource
 	SetVar(string, any)
 	GetVar(string) (any, bool)

@@ -31,7 +31,6 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-service/api"
-	"github.com/inspektor-gadget/inspektor-gadget/pkg/params"
 )
 
 type dataElement api.DataElement
@@ -165,7 +164,7 @@ type dataSource struct {
 
 	config *viper.Viper
 
-	params params.Params
+	params api.ParamValues
 }
 
 func newDataSource(t Type, name string, options ...DataSourceOption) (*dataSource, error) {
@@ -183,7 +182,7 @@ func newDataSource(t Type, name string, options ...DataSourceOption) (*dataSourc
 		byteOrder:       binary.NativeEndian,
 		tags:            make([]string, 0),
 		annotations:     make(map[string]string),
-		params:          make([]*params.Param, 0),
+		params:          make(map[string]string),
 	}
 
 	for _, option := range options {
@@ -497,9 +496,12 @@ func (ds *dataSource) applyFieldConfig(newFields ...*field) {
 			FieldFlagHidden.AddTo(&field.Flags)
 		} else if strings.HasPrefix(field.Annotations[ColumnsHiddenAnnotation], "params:") {
 			paramKey := strings.TrimPrefix(field.Annotations[ColumnsHiddenAnnotation], "params:")
-			paramIndex := slices.IndexFunc(ds.params, func(p *params.Param) bool { return p.Key == paramKey })
+			fmt.Printf("paramKey: %s\n", paramKey)
+			fmt.Printf("params: %v\n", ds.params)
+			fmt.Printf("field name: %s\n", field.Name)
 
-			if paramIndex != -1 && ds.params[paramIndex].String() == "false" {
+			if value, exists := ds.params[paramKey]; exists && strings.ToLower(value) != "true" {
+				fmt.Println("Hiding field")
 				FieldFlagHidden.AddTo(&field.Flags)
 			}
 

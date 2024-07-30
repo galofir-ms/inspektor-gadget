@@ -190,30 +190,11 @@ func (c *GadgetContext) DataOperators() []operators.DataOperator {
 }
 
 func (c *GadgetContext) RegisterDataSource(t datasource.Type, name string) (datasource.DataSource, error) {
-	c.lock.Lock()
-	defer c.lock.Unlock()
+	return c.registerDataSource(t, name, map[string]string{})
+}
 
-	options := make([]datasource.DataSourceOption, 0)
-	if cfg, ok := c.GetVar("config"); ok {
-		if v, ok := cfg.(*viper.Viper); ok {
-			sub := v.Sub("datasources." + name)
-			if sub != nil {
-				options = append(options, datasource.WithConfig(sub))
-			}
-		}
-	}
-
-	params := c.gadget.ParamDescs().ToParams()
-
-	options = append(options, datasource.WithParams(*params))
-
-	ds, err := datasource.New(t, name, options...)
-	if err != nil {
-		return nil, fmt.Errorf("creating DataSource: %w", err)
-	}
-
-	c.dataSources[name] = ds
-	return ds, nil
+func (c *GadgetContext) RegisterDataSourceWithParams(t datasource.Type, name string, paramValues api.ParamValues) (datasource.DataSource, error) {
+	return c.registerDataSource(t, name, paramValues)
 }
 
 func (c *GadgetContext) GetDataSources() map[string]datasource.DataSource {
@@ -326,4 +307,29 @@ func WaitForTimeoutOrDone(c gadgets.GadgetContext) {
 	ctx, cancel := WithTimeoutOrCancel(c.Context(), c.Timeout())
 	defer cancel()
 	<-ctx.Done()
+}
+
+func (c *GadgetContext) registerDataSource(t datasource.Type, name string, paramValues api.ParamValues) (datasource.DataSource, error) {
+	c.lock.Lock()
+	defer c.lock.Unlock()
+
+	options := make([]datasource.DataSourceOption, 0)
+	if cfg, ok := c.GetVar("config"); ok {
+		if v, ok := cfg.(*viper.Viper); ok {
+			sub := v.Sub("datasources." + name)
+			if sub != nil {
+				options = append(options, datasource.WithConfig(sub))
+			}
+		}
+	}
+
+	options = append(options, datasource.WithParams(paramValues))
+
+	ds, err := datasource.New(t, name, options...)
+	if err != nil {
+		return nil, fmt.Errorf("creating DataSource: %w", err)
+	}
+
+	c.dataSources[name] = ds
+	return ds, nil
 }
