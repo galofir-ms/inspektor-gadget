@@ -31,6 +31,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-service/api"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/params"
 )
 
 type dataElement api.DataElement
@@ -163,6 +164,8 @@ type dataSource struct {
 	lock      sync.RWMutex
 
 	config *viper.Viper
+
+	params params.Params
 }
 
 func newDataSource(t Type, name string, options ...DataSourceOption) (*dataSource, error) {
@@ -180,6 +183,7 @@ func newDataSource(t Type, name string, options ...DataSourceOption) (*dataSourc
 		byteOrder:       binary.NativeEndian,
 		tags:            make([]string, 0),
 		annotations:     make(map[string]string),
+		params:          make([]*params.Param, 0),
 	}
 
 	for _, option := range options {
@@ -487,10 +491,18 @@ func (ds *dataSource) applyFieldConfig(newFields ...*field) {
 		}
 	}
 
-	// second pass setting flags based on annotations
+	// second pass setting flags based on annotations and provided params
 	for _, field := range newFields {
 		if field.Annotations[ColumnsHiddenAnnotation] == "true" {
 			FieldFlagHidden.AddTo(&field.Flags)
+		} else if strings.HasPrefix(field.Annotations[ColumnsHiddenAnnotation], "params:") {
+			paramKey := strings.TrimPrefix(field.Annotations[ColumnsHiddenAnnotation], "params:")
+			paramIndex := slices.IndexFunc(ds.params, func(p *params.Param) bool { return p.Key == paramKey })
+
+			if paramIndex != -1 && ds.params[paramIndex].String() == "false" {
+				FieldFlagHidden.AddTo(&field.Flags)
+			}
+
 		}
 	}
 }

@@ -203,6 +203,10 @@ func (c *GadgetContext) RegisterDataSource(t datasource.Type, name string) (data
 		}
 	}
 
+	params := c.gadget.ParamDescs().ToParams()
+
+	options = append(options, datasource.WithParams(*params))
+
 	ds, err := datasource.New(t, name, options...)
 	if err != nil {
 		return nil, fmt.Errorf("creating DataSource: %w", err)

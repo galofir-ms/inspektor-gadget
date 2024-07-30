@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/gadget-service/api"
+	"github.com/inspektor-gadget/inspektor-gadget/pkg/params"
 	"github.com/inspektor-gadget/inspektor-gadget/pkg/parser"
 )
 
@@ -183,5 +184,11 @@ type DataSourceOption func(*dataSource)
 func WithConfig(v *viper.Viper) DataSourceOption {
 	return func(source *dataSource) {
 		source.config = v
+	}
+}
+
+func WithParams(params params.Params) DataSourceOption {
+	return func(source *dataSource) {
+		source.params = params
 	}
 }
